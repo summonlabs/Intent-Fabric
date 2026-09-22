@@ -1,0 +1,4 @@
+# Intent Fabric stores text files with LF line endings in the repository and
+# in the working tree, so that a fresh clone builds from byte-identical sources
+# on every platform.
+* text=auto eol=lf

@@ -1,0 +1,11 @@
+add_executable(ifabric_example_validate example_validate.cpp)
+target_link_libraries(ifabric_example_validate PRIVATE ifabric_core)
+ifabric_apply_warnings(ifabric_example_validate)
+
+add_executable(ifabric_example_transaction example_transaction.cpp)
+target_link_libraries(ifabric_example_transaction PRIVATE ifabric_core)
+ifabric_apply_warnings(ifabric_example_transaction)
+
+add_executable(ifabric_example_boundaries example_boundaries.cpp)
+target_link_libraries(ifabric_example_boundaries PRIVATE ifabric_core)
+ifabric_apply_warnings(ifabric_example_boundaries)

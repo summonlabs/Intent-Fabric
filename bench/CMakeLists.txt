@@ -1,0 +1,3 @@
+add_executable(ifabric_bench ifabric_bench.cpp)
+target_link_libraries(ifabric_bench PRIVATE ifabric_core)
+ifabric_apply_warnings(ifabric_bench)

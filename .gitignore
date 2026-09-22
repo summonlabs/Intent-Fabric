@@ -1,0 +1,42 @@
+# Build trees
+/build/
+/build-*/
+/out/
+/install/
+/_install/
+/artifacts/
+
+# IDE / editor
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+CMakeSettings.json
+
+# Compiled / generated
+*.obj
+*.o
+*.a
+*.lib
+*.dll
+*.exe
+*.pdb
+*.ilk
+*.exp
+*.idb
+*.log
+*.tmp
+*.bak
+*.orig
+*.rej
+compile_commands.json
+
+# Local scratch
+/scratch/
+/notes/
+*.local.md
+*.local.json
+*.local.txt
+.DS_Store
+Thumbs.db

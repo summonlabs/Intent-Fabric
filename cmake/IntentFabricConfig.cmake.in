@@ -1,0 +1,13 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+if(WIN32)
+  # Winsock is linked by the imported target; nothing extra required.
+elseif(UNIX AND NOT APPLE)
+  find_dependency(Threads)
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/IntentFabricTargets.cmake")
+
+check_required_components(IntentFabric)
