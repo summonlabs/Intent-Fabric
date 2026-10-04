@@ -1,6 +1,6 @@
 # Intent Fabric
 
-**Authoritative desired-state intent runtime for Summon Software Labs Fabric OS.**
+**Authoritative desired-state intent runtime for network fabrics.**
 
 Intent Fabric owns the canonical declarative statement of what the network should
 be, independent of device-specific configuration syntax and independent of the
