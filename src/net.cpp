@@ -371,7 +371,9 @@ Result<SocketHandle> listen_tcp(const std::string& host, std::uint16_t port,
     }
     int one = 1;
 #if defined(_WIN32)
-    ::setsockopt(static_cast<SOCKET>(candidate), SOL_SOCKET, SO_REUSEADDR,
+    // SO_REUSEADDR on Windows lets a second socket bind a port that is still
+    // listening; exclusive use makes that second bind fail instead.
+    ::setsockopt(static_cast<SOCKET>(candidate), SOL_SOCKET, SO_EXCLUSIVEADDRUSE,
                  reinterpret_cast<const char*>(&one), sizeof(one));
 #else
     ::setsockopt(candidate, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));

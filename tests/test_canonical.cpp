@@ -8,11 +8,46 @@
 #include "ifabric_test.hpp"
 
 #include <algorithm>
+#include <cstdint>
 #include <numeric>
+
+#if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#else
+#include <time.h>
+#endif
 
 using namespace ifabric;
 
 namespace {
+
+// CPU time used so far by the calling thread, in milliseconds. Unlike elapsed
+// time it does not grow while the machine is busy with other work.
+double thread_cpu_ms() {
+#if defined(_WIN32)
+  FILETIME created{};
+  FILETIME exited{};
+  FILETIME kernel{};
+  FILETIME user{};
+  if (::GetThreadTimes(::GetCurrentThread(), &created, &exited, &kernel, &user) == 0) {
+    return 0.0;
+  }
+  const auto ticks = [](const FILETIME& value) {
+    return (static_cast<std::uint64_t>(value.dwHighDateTime) << 32U) | value.dwLowDateTime;
+  };
+  return static_cast<double>(ticks(kernel) + ticks(user)) / 10000.0;
+#else
+  timespec now{};
+  ::clock_gettime(CLOCK_THREAD_CPUTIME_ID, &now);
+  return static_cast<double>(now.tv_sec) * 1000.0 + static_cast<double>(now.tv_nsec) / 1.0e6;
+#endif
+}
 
 DomainId core_domain() { return DomainId::parse("dom.core").value(); }
 
@@ -150,6 +185,22 @@ IFABRIC_TEST(canonical, declared_object_bound_is_enforced) {
   document.devices.resize(kMaxObjectsPerDocument + 1, filler);
   const auto form = canonicalize(document);
   CHECK_ERROR_CODE(form.error(), ErrorCode::LimitExceeded);
+}
+
+IFABRIC_TEST(canonical, declared_object_bound_is_checked_before_normalizing) {
+  IntentDocument document = synthesize(core_domain(), SynthOptions{});
+  // Every filler device has the same id, so normalizing them would order the
+  // ties by serializing devices: millions of serializations for this document.
+  DeviceDecl filler = document.devices.front();
+  document.devices.resize(kMaxObjectsPerDocument + 1, filler);
+  const double before = thread_cpu_ms();
+  const auto form = canonicalize(document);
+  const double used = thread_cpu_ms() - before;
+  CHECK_ERROR_CODE(form.error(), ErrorCode::LimitExceeded);
+  // The bound refuses the document from its declared counts, before any of the
+  // work it bounds. Refused only after normalization, this document cost about
+  // 10 s of CPU in Release and minutes in Debug.
+  CHECK(used < 1000.0);
 }
 
 IFABRIC_TEST(canonical, digest_helpers_agree_with_canonicalize) {

@@ -7,7 +7,9 @@
 #include "ifabric_test.hpp"
 #include "process.hpp"
 
+#include <chrono>
 #include <fstream>
+#include <thread>
 
 using namespace ifabric;
 
@@ -512,4 +514,30 @@ IFABRIC_TEST(store, lineage_journal_records_every_commit) {
   }
   CHECK_EQ(lines, std::size_t{3});
   CHECK(journal.value().find("\"event\":\"commit\"") != std::string::npos);
+}
+
+IFABRIC_TEST(store, an_atomic_write_waits_for_a_reader_to_close) {
+  ifabric_test::TempDirectory directory("store-atomic-reader");
+  const Path path = directory.path() / "state.bin";
+  REQUIRE(write_file_atomic(path, "FIRST", WriteOptions{false, false}).ok());
+  bool reader_opened = false;
+  bool written = false;
+  {
+    // Another tool reading the store (an inspection, a scan) holds the file
+    // open while it is replaced, and closes it shortly after.
+    std::ifstream reader(path, std::ios::binary);
+    reader_opened = reader.is_open();
+    std::thread writer([&path, &written] {
+      written = write_file_atomic(path, "SECOND", WriteOptions{false, false}).ok();
+    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    reader.close();
+    writer.join();
+  }
+  CHECK(reader_opened);
+  // The replacement waits for the reader instead of failing the write.
+  CHECK(written);
+  const auto stored = read_file(path, 64);
+  REQUIRE(stored.ok());
+  CHECK(stored.value() == "SECOND");
 }

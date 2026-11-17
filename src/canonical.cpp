@@ -296,12 +296,17 @@ IntentDocument normalize(IntentDocument document) {
 }
 
 Result<CanonicalForm> canonicalize(const IntentDocument& document) {
+  // The bound is checked before normalization, which it exists to limit:
+  // normalizing copies the document and sorts every collection, ordering
+  // objects with equal ids by serializing them, so an oversized document cost
+  // seconds (minutes in Debug) of CPU before it was refused. Normalization
+  // changes no collection's size, so the declared count is the same.
+  if (document.declared_object_count() > kMaxObjectsPerDocument) {
+    return Error(ErrorCode::LimitExceeded, "document declares too many objects",
+                 std::to_string(document.declared_object_count()));
+  }
   CanonicalForm form;
   form.normalized = normalize(document);
-  if (form.normalized.declared_object_count() > kMaxObjectsPerDocument) {
-    return Error(ErrorCode::LimitExceeded, "document declares too many objects",
-                 std::to_string(form.normalized.declared_object_count()));
-  }
   form.document_json = to_json(form.normalized);
   form.content_json = content_payload(form.normalized);
   form.document_digest = DocumentDigest::of(form.document_json.dump());

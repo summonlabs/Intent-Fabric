@@ -367,3 +367,18 @@ IFABRIC_TEST(net, daemon_survives_kill_and_restart_with_fresh_incarnation_fencin
     (void)daemon.wait();
   }
 }
+
+IFABRIC_TEST(net, a_second_listener_cannot_take_a_listening_port) {
+  std::uint16_t port = 0;
+  const auto first = listen_tcp("127.0.0.1", 0, port);
+  REQUIRE(first.ok());
+  std::uint16_t second_port = 0;
+  const auto second = listen_tcp("127.0.0.1", port, second_port);
+  // Two intent servers must never share one listening port: the second bind fails.
+  const bool second_bound = second.ok();
+  if (second_bound) {
+    (void)close_socket(second.value());
+  }
+  (void)close_socket(first.value());
+  CHECK(!second_bound);
+}
